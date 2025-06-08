@@ -1,10 +1,34 @@
+name: ZMK Firmware Build
+
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
-    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@main
-      - name: Initialize west (if needed)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install west
+
+      - name: Initialize west (safe)
         run: |
           if [ ! -f .west/config ]; then
             west init -l config
           fi
+
+      - name: Update west
+        run: west update
+
+      - name: Export Zephyr
+        run: west zephyr-export
+
+      - name: Build firmware
+        run: |
+          west build -s zmk/app -d build/left -b nice_nano_v2 -- -DSHIELD="corne_left nice_view_adapter nice_view_gem"
